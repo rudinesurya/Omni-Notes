@@ -245,6 +245,10 @@ public class DetailFragment extends BaseFragment implements OnReminderPickedList
 	@Override
 	public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
 		View view = inflater.inflate(R.layout.fragment_detail, container, false);
+		// Bottom padding set for translucent navigation bar since Kitkat
+		int softButtonHeight=Display.getSoftButtonsBarHeight( getActivity());
+		view.setPadding(view.getPaddingLeft(), view.getPaddingTop(), view.getPaddingRight(),
+				view.getPaddingBottom() + softButtonHeight);
 		ButterKnife.bind(this, view);
 		return view;
 	}
@@ -262,11 +266,11 @@ public class DetailFragment extends BaseFragment implements OnReminderPickedList
 		mainActivity.getToolbar().setNavigationOnClickListener(v -> navigateUp());
 
 		// Force the navigation drawer to stay opened if tablet mode is on, otherwise has to stay closed
-//		if (NavigationDrawerFragment.isDoublePanelActive()) { // Uncomment this code when double panel feature will be developed!
-//			mainActivity.getDrawerLayout().setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_OPEN);
-//		} else {
+		if (NavigationDrawerFragment.isDoublePanelActive()) {
+			mainActivity.getDrawerLayout().setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_OPEN);
+		} else {
 			mainActivity.getDrawerLayout().setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED);
-//		}
+		}
 
 		// Restored temp note after orientation change
 		if (savedInstanceState != null) {
@@ -487,7 +491,7 @@ public class DetailFragment extends BaseFragment implements OnReminderPickedList
 			// audio recording attached the case must be handled in specific way
 			if (uri != null && !Constants.INTENT_GOOGLE_NOW.equals(i.getAction())) {
 				String name = FileHelper.getNameFromUri(mainActivity, uri);
-				new AttachmentTask(this, uri, name, this).execute();
+				new AttachmentTask(this, uri, name, this).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
 			}
 
 			// Multiple attachment data
@@ -495,7 +499,7 @@ public class DetailFragment extends BaseFragment implements OnReminderPickedList
 			if (uris != null) {
 				for (Uri uriSingle : uris) {
 					String name = FileHelper.getNameFromUri(mainActivity, uriSingle);
-					new AttachmentTask(this, uriSingle, name, this).execute();
+					new AttachmentTask(this, uriSingle, name, this).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
 				}
 			}
 		}
@@ -587,17 +591,6 @@ public class DetailFragment extends BaseFragment implements OnReminderPickedList
 		if (!StringUtils.isEmpty(reminderString)) {
 			reminderIcon.setImageResource(R.drawable.ic_alarm_add_black_18dp);
 			datetime.setText(reminderString);
-		}
-
-		// Timestamps view
-		// Bottom padding set for translucent navbar in Kitkat
-		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-			int navBarHeight = Display.getNavigationBarHeightKitkat(mainActivity);
-			int negativePadding = navBarHeight >= 27 * 3 ? -27 : 0;
-			int timestampsViewPaddingBottom = navBarHeight > 0 ? navBarHeight + negativePadding : timestampsView
-					.getPaddingBottom();
-			timestampsView.setPadding(timestampsView.getPaddingStart(), timestampsView.getPaddingTop(),
-					timestampsView.getPaddingEnd(), timestampsViewPaddingBottom);
 		}
 	}
 
@@ -1501,7 +1494,7 @@ public class DetailFragment extends BaseFragment implements OnReminderPickedList
 		}
 		for (Uri uri : uris) {
 			String name = FileHelper.getNameFromUri(mainActivity, uri);
-			new AttachmentTask(this, uri, name, this).execute();
+			new AttachmentTask(this, uri, name, this).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
 		}
 	}
 
@@ -1509,7 +1502,6 @@ public class DetailFragment extends BaseFragment implements OnReminderPickedList
 	/**
 	 * Discards changes done to the note and eventually delete new attachments
 	 */
-	@SuppressLint("NewApi")
 	private void discard() {
 		// Checks if some new files have been attached and must be removed
 		if (!noteTmp.getAttachmentsList().equals(note.getAttachmentsList())) {
